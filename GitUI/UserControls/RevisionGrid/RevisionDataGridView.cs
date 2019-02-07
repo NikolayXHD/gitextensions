@@ -28,7 +28,7 @@ namespace GitUI.UserControls.RevisionGrid
 
     public sealed class RevisionDataGridView : DataGridView
     {
-        private static readonly SolidBrush _alternatingRowBackgroundBrush = new SolidBrush(Color.FromArgb(250, 250, 250));
+        private static Brush AlternatingRowBackgroundBrush => SystemBrushes.Control;
 
         internal RevisionGraph _revisionGraph = new RevisionGraph();
 
@@ -236,8 +236,8 @@ namespace GitUI.UserControls.RevisionGrid
             }
 
             return AppSettings.RevisionGraphDrawNonRelativesTextGray && !RowIsRelative(rowIndex)
-                ? Color.Gray
-                : Color.Black;
+                ? SystemColors.GrayText
+                : SystemColors.WindowText;
         }
 
         private Brush GetBackground(DataGridViewElementStates state, int rowIndex, GitRevision revision)
@@ -254,7 +254,7 @@ namespace GitUI.UserControls.RevisionGrid
 
             if (rowIndex % 2 == 0 && AppSettings.RevisionGraphDrawAlternateBackColor)
             {
-                return _alternatingRowBackgroundBrush;
+                return AlternatingRowBackgroundBrush;
             }
 
             return SystemBrushes.Window;

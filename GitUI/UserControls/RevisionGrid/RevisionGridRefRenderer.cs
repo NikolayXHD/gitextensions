@@ -21,7 +21,7 @@ namespace GitUI
             var paddingTopBottom = DpiUtil.Scale(2);
             var marginRight = DpiUtil.Scale(7);
 
-            var textColor = fill ? headColor : Lerp(headColor, Color.White, 0.5f);
+            var textColor = fill ? headColor : Lerp(headColor, SystemColors.Window, 0.5f);
 
             var textSize = TextRenderer.MeasureText(graphics, name, font, Size.Empty, TextFormatFlags.NoPadding);
 
@@ -70,8 +70,8 @@ namespace GitUI
                 {
                     if (fill)
                     {
-                        var color1 = Lerp(color, Color.White, 0.92F);
-                        var color2 = Lerp(color1, Color.White, 0.9F);
+                        var color1 = Lerp(color, SystemColors.Window, 0.92F);
+                        var color2 = Lerp(color1, SystemColors.Window, 0.9F);
                         using (var brush = new LinearGradientBrush(bounds, color1, color2, angle: 90))
                         {
                             graphics.FillPath(brush, path);
@@ -83,7 +83,7 @@ namespace GitUI
                     }
 
                     // frame
-                    using (var pen = new Pen(Lerp(color, Color.White, 0.83F)))
+                    using (var pen = new Pen(Lerp(color, SystemColors.Window, 0.83F)))
                     {
                         if (dashedLine)
                         {
@@ -197,7 +197,7 @@ namespace GitUI
             return path;
         }
 
-        private static Color Lerp(Color colour, Color to, float amount)
+        public static Color Lerp(Color colour, Color to, float amount)
         {
             // start colours as lerp-able floats
             float sr = colour.R, sg = colour.G, sb = colour.B;

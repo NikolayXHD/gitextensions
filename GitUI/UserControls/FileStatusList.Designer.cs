@@ -43,6 +43,7 @@
             this.FileStatusListView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
             | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.FileStatusListView.BackColor = System.Drawing.SystemColors.Window;
             this.FileStatusListView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.FileStatusListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader});
@@ -60,6 +61,8 @@
             this.FileStatusListView.TabIndex = 2;
             this.FileStatusListView.UseCompatibleStateImageBehavior = false;
             this.FileStatusListView.View = System.Windows.Forms.View.Details;
+            this.FileStatusListView.Paint += new System.Windows.Forms.PaintEventHandler(this.FileStatusListView_Paint);
+            this.FileStatusListView.DrawItem += new System.Windows.Forms.DrawListViewItemEventHandler(this.FileStatusListView_DrawItem);
             this.FileStatusListView.DrawSubItem += new System.Windows.Forms.DrawListViewSubItemEventHandler(this.FileStatusListView_DrawSubItem);
             this.FileStatusListView.DoubleClick += new System.EventHandler(this.FileStatusListView_DoubleClick);
             this.FileStatusListView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FileStatusListView_KeyDown);
@@ -105,8 +108,8 @@
             // FilterWatermarkLabel
             // 
             this.FilterWatermarkLabel.AutoSize = true;
-            this.FilterWatermarkLabel.BackColor = System.Drawing.Color.White;
-            this.FilterWatermarkLabel.ForeColor = System.Drawing.Color.LightGray;
+            this.FilterWatermarkLabel.BackColor = System.Drawing.SystemColors.Window;
+            this.FilterWatermarkLabel.ForeColor = System.Drawing.SystemColors.ControlLightLight;
             this.FilterWatermarkLabel.Location = new System.Drawing.Point(4, 4);
             this.FilterWatermarkLabel.Name = "FilterWatermarkLabel";
             this.FilterWatermarkLabel.Size = new System.Drawing.Size(65, 13);

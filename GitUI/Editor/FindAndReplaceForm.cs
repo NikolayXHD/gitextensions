@@ -263,7 +263,7 @@ namespace GitUI
                     count++;
 
                     var m = new TextMarker(range.Offset, range.Length,
-                                           TextMarkerType.SolidBlock, Color.Yellow, Color.Black);
+                                           TextMarkerType.SolidBlock, Color.Yellow, SystemColors.WindowText);
                     group.AddMarker(m);
                 }
 

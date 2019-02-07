@@ -252,7 +252,7 @@ namespace GitUI.CommandsDialogs
 
             ManageWorktreeSupport();
 
-            var toolBackColor = Color.FromArgb(218, 218, 218);
+            var toolBackColor = SystemColors.ControlLight;
             BackColor = toolBackColor;
             ToolStrip.BackColor = toolBackColor;
             toolStripRevisionFilterDropDownButton.BackColor = toolBackColor;
@@ -260,7 +260,7 @@ namespace GitUI.CommandsDialogs
             toolPanel.TopToolStripPanel.BackColor = toolBackColor;
             statusStrip.BackColor = toolBackColor;
 
-            var toolTextBoxBackColor = Color.FromArgb(235, 235, 235);
+            var toolTextBoxBackColor = SystemColors.ControlLightLight;
             toolStripBranchFilterComboBox.BackColor = toolTextBoxBackColor;
             toolStripRevisionFilterTextBox.BackColor = toolTextBoxBackColor;
 

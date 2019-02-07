@@ -84,7 +84,7 @@
             this.Soft.AutoSize = true;
             this.Soft.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
             this.Soft.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.Soft.ForeColor = System.Drawing.Color.Black;
+            this.Soft.ForeColor = System.Drawing.SystemColors.WindowText;
             this.Soft.Location = new System.Drawing.Point(4, 4);
             this.Soft.Margin = new System.Windows.Forms.Padding(4);
             this.Soft.Name = "Soft";
@@ -99,7 +99,7 @@
             this.Hard.AutoSize = true;
             this.Hard.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))));
             this.Hard.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.Hard.ForeColor = System.Drawing.Color.Black;
+            this.Hard.ForeColor = System.Drawing.SystemColors.WindowText;
             this.Hard.Location = new System.Drawing.Point(4, 122);
             this.Hard.Margin = new System.Windows.Forms.Padding(4);
             this.Hard.Name = "Hard";
@@ -116,7 +116,7 @@
             this.Mixed.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
             this.Mixed.Checked = true;
             this.Mixed.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.Mixed.ForeColor = System.Drawing.Color.Black;
+            this.Mixed.ForeColor = System.Drawing.SystemColors.WindowText;
             this.Mixed.Location = new System.Drawing.Point(4, 63);
             this.Mixed.Margin = new System.Windows.Forms.Padding(4);
             this.Mixed.Name = "Mixed";

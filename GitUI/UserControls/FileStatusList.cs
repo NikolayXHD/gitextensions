@@ -1044,6 +1044,16 @@ namespace GitUI
             }
         }
 
+        private void FileStatusListView_Paint(object sender, PaintEventArgs e)
+        {
+            e.Graphics.Clear(FileStatusListView.BackColor);
+        }
+
+        private void FileStatusListView_DrawItem(object sender, DrawListViewItemEventArgs e)
+        {
+            e.DrawBackground();
+        }
+
         private void FileStatusListView_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
         {
             var item = e.Item;

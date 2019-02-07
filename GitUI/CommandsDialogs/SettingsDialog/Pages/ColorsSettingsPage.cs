@@ -1,16 +1,29 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using ColorScheme;
 using GitCommands;
 
 namespace GitUI.CommandsDialogs.SettingsDialog.Pages
 {
     public partial class ColorsSettingsPage : SettingsPageWithHeader
     {
+        private readonly ColorSchemeEditor _editor;
+
         public ColorsSettingsPage()
         {
             InitializeComponent();
+
+            string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GitExtensions", "ColorSchemes");
+            Directory.CreateDirectory(directory);
+
+            _editor = new ColorSchemeEditor(
+                new ColorSchemeController(),
+                directory,
+                gbColorScheme);
+
             InitializeComplete();
         }
 

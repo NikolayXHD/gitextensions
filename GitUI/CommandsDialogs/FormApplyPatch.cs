@@ -110,14 +110,14 @@ namespace GitUI.CommandsDialogs
                 Mergetool.Text = ">" + _conflictMergetoolText.Text + "<";
                 Mergetool.Focus();
                 AcceptButton = Mergetool;
-                MergeToolPanel.BackColor = Color.Black;
+                MergeToolPanel.BackColor = SystemColors.WindowText;
             }
             else if (Module.InTheMiddleOfPatch())
             {
                 Resolved.Text = ">" + _conflictResolvedText.Text + "<";
                 Resolved.Focus();
                 AcceptButton = Resolved;
-                ContinuePanel.BackColor = Color.Black;
+                ContinuePanel.BackColor = SystemColors.WindowText;
             }
         }
 

@@ -1660,6 +1660,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ColorScheme\ColorSchemeEditor\ColorSchemeEditor.csproj">
+      <Project>{157A0178-0C70-4320-B0CC-F12849D066B3}</Project>
+      <Name>ColorSchemeEditor</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Externals\conemu-inside\ConEmuWinForms\ConEmuWinForms.csproj">
       <Project>{1DC7D403-484B-43B4-B017-1356397A32CB}</Project>
       <Name>ConEmuWinForms</Name>

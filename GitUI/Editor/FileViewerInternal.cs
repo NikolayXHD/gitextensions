@@ -58,7 +58,7 @@ namespace GitUI.Editor
                         TextEditor.ActiveTextAreaControl.TextArea.TextView.GetLogicalLine(e.Y)));
             };
 
-            HighlightingManager.Manager.DefaultHighlighting.SetColorFor("LineNumbers", new HighlightColor(Color.FromArgb(80, 0, 0, 0), Color.White, false, false));
+            HighlightingManager.Manager.DefaultHighlighting.SetColorFor("LineNumbers", new HighlightColor(Color.FromArgb(80, 0, 0, 0), SystemColors.Window, false, false));
             TextEditor.ActiveTextAreaControl.TextEditorProperties.EnableFolding = false;
 
             _lineNumbersControl = new DiffViewerLineNumberControl(TextEditor.ActiveTextAreaControl.TextArea);

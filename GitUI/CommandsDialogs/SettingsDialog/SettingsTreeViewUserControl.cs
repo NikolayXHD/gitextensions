@@ -195,12 +195,12 @@ namespace GitUI.CommandsDialogs.SettingsDialog
                 ////textBoxFind.Font = new Font("Calibri", textBoxFind.Font.Size, FontStyle.Italic);
                 textBoxFind.Font = new Font(textBoxFind.Font, FontStyle.Italic);
                 textBoxFind.Text = FindPrompt;
-                textBoxFind.ForeColor = Color.Gray;
+                textBoxFind.ForeColor = SystemColors.GrayText;
             }
             else
             {
                 textBoxFind.Font = _origTextBoxFont;
-                textBoxFind.ForeColor = Color.Black;
+                textBoxFind.ForeColor = SystemColors.WindowText;
             }
         }
 

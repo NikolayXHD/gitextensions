@@ -2719,7 +2719,7 @@ namespace GitUI.CommandsDialogs
                 {
                     // Ensure next line. Optionally add a bullet.
                     Message.EnsureEmptyLine(commitValidationIndentAfterFirstLine, 1);
-                    Message.ChangeTextColor(2, 0, Message.LineLength(2), Color.Black);
+                    Message.ChangeTextColor(2, 0, Message.LineLength(2), SystemColors.WindowText);
                     if (FormatLine(2))
                     {
                         changed = true;
@@ -2753,7 +2753,7 @@ namespace GitUI.CommandsDialogs
 
                     if (!textAppended && len > 0)
                     {
-                        Message.ChangeTextColor(line, offset, len, Color.Black);
+                        Message.ChangeTextColor(line, offset, len, SystemColors.WindowText);
                     }
 
                     if (lineLength > lineLimit)

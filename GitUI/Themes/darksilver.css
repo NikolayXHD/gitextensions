@@ -38,9 +38,9 @@
 .DiffAdded { color: #054e2a }
 .DiffAddedExtra { color: #058545 }
 
-.Branch            { color: hsl(0,   100%, 75%) }
-.Branch.colorblind { color: hsl(210, 100%, 50%) }
-.DiffRemoved            { color: hsl(0,   86%, 19%) }
-.DiffRemoved.colorblind { color: hsl(242, 85%, 18%) }
-.DiffRemovedExtra            { color: hsl(0,   92%, 26%) }
-.DiffRemovedExtra.colorblind { color: hsl(242, 92%, 31%) }
+.Branch                      { color: #ff8080 } /* hsl(0,   100%, 75%) */
+.Branch.colorblind           { color: #0080ff } /* hsl(210, 100%, 50%) */
+.DiffRemoved                 { color: #5a0707 } /* hsl(0,   86%,  19%) */
+.DiffRemoved.colorblind      { color: #090755 } /* hsl(242, 85%,  18%) */
+.DiffRemovedExtra            { color: #7f0505 } /* hsl(0,   92%,  26%) */
+.DiffRemovedExtra.colorblind { color: #0b0698 } /* hsl(242, 92%,  31%) */

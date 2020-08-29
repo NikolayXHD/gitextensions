@@ -32,16 +32,16 @@
 .AuthoredHighlight { color: #ffffe0 }
 .HighlightAllOccurences { color: #ffffe0 }
 .Tag { color: #00008b }
-.Graph { color: #8b0000 }
-.Branch { color: #8b0000 }
 .RemoteBranch { color: #008000 }
 .DiffSection { color: #e6e6e6 }
-.DiffRemoved { color: #ffc8c8 }
-.DiffRemovedExtra { color: #ffa5a5 }
 .DiffAdded { color: #c8ffc8 }
 .DiffAddedExtra { color: #87ff87 }
 
-.Graph.colorblind { color: #0500a8 }
-.Branch.colorblind { color: #0500a8 }
-.DiffRemoved.colorblind { color: #93cbff }
-.DiffRemovedExtra.colorblind { color: #4ca5ff }
+.Graph            { color: hsl(0,   100%, 27%) }
+.Graph.colorblind { color: hsl(242, 100%, 33%) }
+.Branch            { color: hsl(0,   100%, 27%) }
+.Branch.colorblind { color: hsl(242, 100%, 33%) }
+.DiffRemoved            { color: hsl(0,   100%, 89%) }
+.DiffRemoved.colorblind { color: hsl(209, 100%, 79%) }
+.DiffRemovedExtra            { color: hsl(0,   100%, 82%) }
+.DiffRemovedExtra.colorblind { color: hsl(210, 100%, 65%) }

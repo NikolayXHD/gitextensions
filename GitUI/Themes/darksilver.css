@@ -1,3 +1,4 @@
+/* System colors */
 .ActiveBorder { color: #6b6b6b }
 .ActiveCaption { color: #585858 }
 .ActiveCaptionText { color: #e2e2e2 }
@@ -28,7 +29,9 @@
 .GradientInactiveCaption { color: #292929 }
 .MenuBar { color: #2d3133 }
 .MenuHighlight { color: #7fabfd }
-.OtherTag { color: #ff8040 }
+
+/* Application colors */
+.OtherTag { color: #cccccc }
 .AuthoredHighlight { color: #373832 }
 .HighlightAllOccurences { color: #606020 }
 .Tag { color: #408080 }

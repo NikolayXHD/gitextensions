@@ -1,4 +1,5 @@
-﻿.ActiveBorder { color: #b4b4b4 }
+﻿/* System colors */
+.ActiveBorder { color: #b4b4b4 }
 .ActiveCaption { color: #99b4d1 }
 .ActiveCaptionText { color: #000000 }
 .AppWorkspace { color: #ababab }
@@ -28,6 +29,8 @@
 .GradientInactiveCaption { color: #d7e4f2 }
 .MenuBar { color: #f0f0f0 }
 .MenuHighlight { color: #3399ff }
+
+/* Application colors */
 .OtherTag { color: #808080 }
 .AuthoredHighlight { color: #ffffe0 }
 .HighlightAllOccurences { color: #ffffe0 }

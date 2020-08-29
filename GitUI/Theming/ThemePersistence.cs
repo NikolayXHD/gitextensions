@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using ExCSS;
 using GitExtUtils.GitUI.Theming;
 using ResourceManager;
 
@@ -13,9 +12,8 @@ namespace GitUI.Theming
 {
     public class ThemePersistence
     {
-        private static readonly Regex Pattern = new Regex(
-            @"^\s*\.\s*(?<name>\w+)\s*\{\s*color\s*:\s*#(?<argb>[\da-f]{6})\s*\}\s*$",
-            RegexOptions.IgnoreCase);
+        private const string ClassSelector = ".";
+        private const string ColorProperty = "color";
 
         private const string Format = ".{0} {{ color: #{1:x6} }}";
 
@@ -25,19 +23,17 @@ namespace GitUI.Theming
             new TranslationString("File not found");
         private readonly TranslationString _fileTooLarge =
             new TranslationString("File too large");
-        private readonly TranslationString _invalidFormatOfLine =
-            new TranslationString("Invalid format of line {0}: {1}");
-        private readonly TranslationString _invalidColorValueAtLine =
-            new TranslationString("Invalid color value at line {0}: {1}");
+        private readonly TranslationString _invalidRule =
+            new TranslationString("Invalid rule: {0}");
 
-        public Theme Load(string fileName, ThemeId id)
+        public Theme Load(string fileName, ThemeId id, string[] variations)
         {
             if (!TryReadFile(fileName, out string serialized))
             {
                 return null;
             }
 
-            if (!TryParse(fileName, serialized, out var appColors, out var sysColors))
+            if (!TryGetColors(fileName, serialized, variations, out var appColors, out var sysColors))
             {
                 return null;
             }
@@ -55,61 +51,6 @@ namespace GitUI.Theming
             File.WriteAllText(fileName, serialized);
 
             static int ToRbgInt(Color с) => с.ToArgb() & 0x00ffffff;
-        }
-
-        private bool TryParse(
-            string fileName,
-            string input,
-            out IReadOnlyDictionary<AppColor, Color> applicationColors,
-            out IReadOnlyDictionary<KnownColor, Color> systemColors)
-        {
-            var appColors = new Dictionary<AppColor, Color>();
-            var sysColors = new Dictionary<KnownColor, Color>();
-            applicationColors = null;
-            systemColors = null;
-
-            var lines = input.Split('\r', '\n');
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i];
-                if (string.IsNullOrEmpty(line))
-                {
-                    continue;
-                }
-
-                var match = Pattern.Match(line);
-                if (!match.Success)
-                {
-                    PrintTraceWarning(fileName, string.Format(_invalidFormatOfLine.Text, i + 1, line));
-                    return false;
-                }
-
-                string nameStr = match.Groups["name"].Value;
-                string rgbaStr = match.Groups["argb"].Value;
-
-                if (!int.TryParse(rgbaStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture,
-                    out int rgb))
-                {
-                    PrintTraceWarning(fileName, string.Format(_invalidColorValueAtLine.Text, i + 1, rgbaStr));
-                    return false;
-                }
-
-                if (Enum.TryParse(nameStr, out AppColor appColorName))
-                {
-                    appColors.Add(appColorName, ToColor(rgb));
-                }
-                else if (Enum.TryParse(nameStr, out KnownColor sysColorName))
-                {
-                    sysColors.Add(sysColorName, ToColor(rgb));
-                }
-            }
-
-            applicationColors = appColors;
-            systemColors = sysColors;
-            return true;
-
-            Color ToColor(int rbgInt) =>
-                Color.FromArgb(rbgInt | -16777216); // 0xff000000, add alpha bits
         }
 
         private bool TryReadFile(string fileName, out string result)
@@ -140,6 +81,96 @@ namespace GitUI.Theming
                 PrintTraceWarning(fileName, ex.Message);
                 return false;
             }
+        }
+
+        private bool TryGetColors(
+            string fileName,
+            string input,
+            string[] allowedClasses,
+            out IReadOnlyDictionary<AppColor, Color> applicationColors,
+            out IReadOnlyDictionary<KnownColor, Color> systemColors)
+        {
+            var appColors = new Dictionary<AppColor, Color>();
+            var sysColors = new Dictionary<KnownColor, Color>();
+            var specificityByColor = new Dictionary<string, int>();
+            var classSet = new HashSet<string>(allowedClasses, StringComparer.OrdinalIgnoreCase);
+
+            applicationColors = null;
+            systemColors = null;
+
+            var parser = new Parser();
+            var stylesheet = parser.Parse(input);
+            foreach (StyleRule rule in stylesheet.StyleRules)
+            {
+                if (rule.Declarations == null || rule.Declarations.Count != 1)
+                {
+                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
+                    return false;
+                }
+
+                var style = rule.Declarations[0];
+                if (style.Name != ColorProperty || !(style.Term is HtmlColor htmlColor))
+                {
+                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
+                    return false;
+                }
+
+                var color = Color.FromArgb(htmlColor.A, htmlColor.R, htmlColor.G, htmlColor.B);
+
+                var classNames = TryGetClassNames(rule);
+
+                var colorName = classNames[0];
+                if (!classNames.Skip(1).All(classSet.Contains))
+                {
+                    continue;
+                }
+
+                specificityByColor.TryGetValue(colorName, out int previousSpecificity);
+                int specificity = classNames.Length;
+                if (specificity < previousSpecificity)
+                {
+                    continue;
+                }
+
+                specificityByColor[colorName] = specificity;
+
+                if (Enum.TryParse(colorName, out AppColor appColorName))
+                {
+                    appColors[appColorName] = color;
+                }
+                else if (Enum.TryParse(colorName, out KnownColor sysColorName))
+                {
+                    sysColors[sysColorName] = color;
+                }
+                else
+                {
+                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
+                    return false;
+                }
+            }
+
+            applicationColors = appColors;
+            systemColors = sysColors;
+            return true;
+        }
+
+        private string[] TryGetClassNames(StyleRule rule)
+        {
+            var selector = rule.Selector;
+            if (!(selector is SimpleSelector simpleSelector))
+            {
+                return null;
+            }
+
+            var selectorText = simpleSelector.ToString();
+            if (!selectorText.StartsWith(ClassSelector))
+            {
+                return null;
+            }
+
+            return selectorText
+                .Substring(ClassSelector.Length)
+                .Split(new[] { ClassSelector }, StringSplitOptions.RemoveEmptyEntries);
         }
 
         [Conditional("DEBUG")]

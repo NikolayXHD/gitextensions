@@ -60,7 +60,7 @@ namespace GitUI.Theming
                 return new ThemeSettings(Theme.Default, invariantTheme, AppSettings.UseSystemVisualStyle);
             }
 
-            var theme = Repository.GetTheme(themeId);
+            var theme = Repository.GetTheme(themeId, AppSettings.ThemeVariations);
             if (theme == null || !TryInstallHooks(theme))
             {
                 return new ThemeSettings(Theme.Default, invariantTheme, AppSettings.UseSystemVisualStyle);

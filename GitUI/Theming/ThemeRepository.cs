@@ -35,19 +35,19 @@ namespace GitUI.Theming
 
         [CanBeNull]
         private string UserThemesDirectory { get; }
-        public string InvariantThemeName { get; } = "win10default";
+        public string InvariantThemeName { get; } = "invariant";
 
-        public Theme GetTheme(ThemeId id)
+        public Theme GetTheme(ThemeId id, string[] variations)
         {
             string path = GetPath(id);
-            return _persistence.Load(path, id);
+            return _persistence.Load(path, id, variations);
         }
 
         public void Save(Theme theme) =>
             _persistence.Save(theme, GetPath(theme.Id));
 
         public Theme GetInvariantTheme() =>
-            GetTheme(new ThemeId(InvariantThemeName, isBuiltin: true));
+            GetTheme(new ThemeId(InvariantThemeName, isBuiltin: true), variations: Array.Empty<string>());
 
         public IEnumerable<ThemeId> GetThemeIds() =>
             GetBuiltinThemeIds().Concat(GetUserCustomizedThemeIds());

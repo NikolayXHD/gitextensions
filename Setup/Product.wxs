@@ -586,8 +586,8 @@
       </Component>
     </DirectoryRef>
     <DirectoryRef Id="ThemesDir">
-      <Component Id="win10default.css" Guid="*">
-        <File Source="$(var.ArtifactsPublishPath)\Themes\win10default.css" />
+      <Component Id="invariant.css" Guid="*">
+        <File Source="$(var.ArtifactsPublishPath)\Themes\invariant.css" />
       </Component>
       <Component Id="dark.css" Guid="*">
         <File Source="$(var.ArtifactsPublishPath)\Themes\dark.css" />
@@ -1584,7 +1584,7 @@
       <ComponentRef Id="EasyHook.dll" />
       <ComponentRef Id="EasyHook32.dll" />
       <ComponentRef Id="EasyHook64.dll" />
-      <ComponentRef Id="win10default.css" />
+      <ComponentRef Id="invariant.css" />
       <ComponentRef Id="dark.css" />
       <ComponentRef Id="darksilver.css" />
       <!-- Remove unused dll, installed in versions <= 2.31 -->

@@ -53,6 +53,12 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
             }
         }
 
+        private string[] ThemeVariation
+        {
+            get => chkColorblind.Checked ? new[] { ThemeVariations.Colorblind } : Array.Empty<string>();
+            set => chkColorblind.Checked = value.Contains(ThemeVariations.Colorblind);
+        }
+
         public bool UseSystemVisualStyle
         {
             get => chkUseSystemVisualStyle.Checked;
@@ -87,6 +93,7 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
                 .Cast<object>()
                 .ToArray());
             SelectedThemeId = AppSettings.ThemeId;
+            ThemeVariation = AppSettings.ThemeVariations;
             UseSystemVisualStyle = AppSettings.UseSystemVisualStyle;
             EndUpdateThemeSettings();
         }
@@ -100,6 +107,7 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
             AppSettings.HighlightAuthoredRevisions = chkHighlightAuthored.Checked;
             AppSettings.UseSystemVisualStyle = UseSystemVisualStyle;
             AppSettings.ThemeId = SelectedThemeId;
+            AppSettings.ThemeVariations = ThemeVariation;
         }
 
         private void ComboBoxTheme_SelectedIndexChanged(object sender, EventArgs e)
@@ -111,10 +119,21 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
 
             BeginUpdateThemeSettings();
             UseSystemVisualStyle = SelectedThemeId == ThemeId.Default;
+            if (SelectedThemeId == ThemeId.Default)
+            {
+                ThemeVariation = Array.Empty<string>();
+            }
+
             EndUpdateThemeSettings();
         }
 
         private void ChkUseSystemVisualStyle_CheckedChanged(object sender, EventArgs e)
+        {
+            BeginUpdateThemeSettings();
+            EndUpdateThemeSettings();
+        }
+
+        private void ChkColorblind_CheckedChanged(object sender, EventArgs e)
         {
             BeginUpdateThemeSettings();
             EndUpdateThemeSettings();
@@ -140,10 +159,12 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
             {
                 bool settingsChanged =
                     UseSystemVisualStyle != ThemeModule.Settings.UseSystemVisualStyle ||
-                    SelectedThemeId != ThemeModule.Settings.Theme.Id;
+                    SelectedThemeId != ThemeModule.Settings.Theme.Id ||
+                    !ThemeVariation.SequenceEqual(AppSettings.ThemeVariations);
 
                 lblRestartNeeded.Visible = settingsChanged;
-                chkUseSystemVisualStyle.Enabled = SelectedThemeId != ThemeId.Default;
+                chkColorblind.Enabled =
+                    chkUseSystemVisualStyle.Enabled = SelectedThemeId != ThemeId.Default;
             }
         }
 

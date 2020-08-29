@@ -40,3 +40,7 @@
 .DiffRemovedExtra { color: #800505 }
 .DiffAdded { color: #054e2a }
 .DiffAddedExtra { color: #058545 }
+
+.Branch.colorblind { color: #0080ff }
+.DiffRemoved.colorblind { color: #0a0757 }
+.DiffRemovedExtra.colorblind { color: #0b0699 }

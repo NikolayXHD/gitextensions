@@ -1247,6 +1247,18 @@ namespace GitCommands
             }
         }
 
+        public static string[] ThemeVariations
+        {
+            get
+            {
+                return GetString("uithemevariations", string.Empty).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+            set
+            {
+                SetString("uithemevariations", string.Join(",", value ?? Array.Empty<string>()));
+            }
+        }
+
         #region Fonts
 
         public static Font FixedWidthFont

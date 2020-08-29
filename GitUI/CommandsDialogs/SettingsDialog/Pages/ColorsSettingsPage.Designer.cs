@@ -183,6 +183,7 @@
             this.fpnlTheme.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.fpnlTheme.Controls.Add(this.lblRestartNeeded);
             this.fpnlTheme.Controls.Add(this._NO_TRANSLATE_cbSelectTheme);
+            this.fpnlTheme.Controls.Add(this.chkColorblind);
             this.fpnlTheme.Controls.Add(this.chkUseSystemVisualStyle);
             this.fpnlTheme.Dock = System.Windows.Forms.DockStyle.Fill;
             this.fpnlTheme.Location = new System.Drawing.Point(3, 19);

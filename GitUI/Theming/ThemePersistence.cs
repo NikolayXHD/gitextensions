@@ -4,9 +4,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using ExCSS;
+using System.Reflection;
 using GitExtUtils.GitUI.Theming;
 using ResourceManager;
+using Color = System.Drawing.Color;
 
 namespace GitUI.Theming
 {
@@ -97,26 +98,13 @@ namespace GitUI.Theming
             applicationColors = null;
             systemColors = null;
 
-            var parser = new Parser();
+            var parser = new ExCSS.StylesheetParser();
             var stylesheet = parser.Parse(input);
-            foreach (StyleRule rule in stylesheet.StyleRules)
+            foreach ((ExCSS.ISelector selector, ExCSS.Color cssColor) in EnumerateColors(stylesheet))
             {
-                if (rule.Declarations == null || rule.Declarations.Count != 1)
-                {
-                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
-                    return false;
-                }
+                var color = Color.FromArgb(cssColor.A, cssColor.R, cssColor.G, cssColor.B);
 
-                var style = rule.Declarations[0];
-                if (style.Name != ColorProperty || !(style.Term is HtmlColor htmlColor))
-                {
-                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
-                    return false;
-                }
-
-                var color = Color.FromArgb(htmlColor.A, htmlColor.R, htmlColor.G, htmlColor.B);
-
-                var classNames = TryGetClassNames(rule);
+                var classNames = TryGetClassNames(selector);
 
                 var colorName = classNames[0];
                 if (!classNames.Skip(1).All(classSet.Contains))
@@ -143,7 +131,7 @@ namespace GitUI.Theming
                 }
                 else
                 {
-                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
+                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, selector.Text));
                     return false;
                 }
             }
@@ -153,15 +141,58 @@ namespace GitUI.Theming
             return true;
         }
 
-        private string[] TryGetClassNames(StyleRule rule)
+        private IEnumerable<(ExCSS.ISelector selector, ExCSS.Color color)> EnumerateColors(ExCSS.IStylesheetNode stylesheet)
         {
-            var selector = rule.Selector;
-            if (!(selector is SimpleSelector simpleSelector))
+            foreach (ExCSS.IStylesheetNode node in EnumerateNodes(stylesheet))
             {
-                return null;
-            }
+                if (!(node is ExCSS.IRule rule) || rule.Type != ExCSS.RuleType.Style)
+                {
+                    continue;
+                }
 
-            var selectorText = simpleSelector.ToString();
+                var selector = rule.Children.OfType<ExCSS.ISelector>().FirstOrDefault();
+                if (selector == null)
+                {
+                    continue;
+                }
+
+                var style = rule.Children.OfType<ExCSS.StyleDeclaration>().FirstOrDefault();
+                if (style == null)
+                {
+                    continue;
+                }
+
+                var colorProperty = style.Children.OfType<ExCSS.Property>().FirstOrDefault(_ => _.Name == ExCSS.PropertyNames.Color);
+                if (colorProperty == null)
+                {
+                    continue;
+                }
+
+                ExCSS.Color? color = GetColor(colorProperty);
+                if (!color.HasValue)
+                {
+                    continue;
+                }
+
+                yield return (selector, color.Value);
+            }
+        }
+
+        private IEnumerable<ExCSS.IStylesheetNode> EnumerateNodes(ExCSS.IStylesheetNode stylesheet)
+        {
+            foreach (ExCSS.IStylesheetNode child in stylesheet.Children)
+            {
+                yield return child;
+                foreach (var descendant in EnumerateNodes(child))
+                {
+                    yield return descendant;
+                }
+            }
+        }
+
+        private string[] TryGetClassNames(ExCSS.ISelector selector)
+        {
+            var selectorText = selector.Text;
             if (!selectorText.StartsWith(ClassSelector))
             {
                 return null;
@@ -172,8 +203,28 @@ namespace GitUI.Theming
                 .Split(new[] { ClassSelector }, StringSplitOptions.RemoveEmptyEntries);
         }
 
+        private ExCSS.Color? GetColor(ExCSS.Property colorProperty)
+        {
+            var value = DeclaredValueProperty.GetValue(colorProperty);
+
+            var valueType = value.GetType();
+            if (!_valueFields.TryGetValue(valueType, out var valueField))
+            {
+                valueField = valueType.GetField("_value", BindingFlags.Instance | BindingFlags.NonPublic);
+                _valueFields.Add(valueType, valueField);
+            }
+
+            var color = valueField.GetValue(value) as ExCSS.Color?;
+            return color;
+        }
+
         [Conditional("DEBUG")]
         private void PrintTraceWarning(string fileName, string message) =>
             Trace.WriteLine(string.Format(_failedToLoadThemeFrom.Text, fileName) + Environment.NewLine + message);
+
+        private static readonly PropertyInfo DeclaredValueProperty =
+            typeof(ExCSS.Property).GetProperty("DeclaredValue", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private static readonly Dictionary<Type, FieldInfo> _valueFields = new Dictionary<Type, FieldInfo>();
     }
 }

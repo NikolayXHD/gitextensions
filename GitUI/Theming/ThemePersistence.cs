@@ -64,8 +64,7 @@ namespace GitUI.Theming
                 return false;
             }
 
-            // > 1MB
-            if (fileInfo.Length > (1 << 20))
+            if (fileInfo.Length > 1024 * 1024)
             {
                 PrintTraceWarning(fileName, _fileTooLarge.Text);
                 return false;

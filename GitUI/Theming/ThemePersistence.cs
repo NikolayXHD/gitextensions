@@ -26,14 +26,14 @@ namespace GitUI.Theming
         private readonly TranslationString _invalidRule =
             new TranslationString("Invalid rule: {0}");
 
-        public Theme Load(string fileName, ThemeId id, string[] variations)
+        public Theme Load(ThemeRepository themeRepository, string fileName, ThemeId id, string[] variations)
         {
             if (!TryReadFile(fileName, out string serialized))
             {
                 return null;
             }
 
-            if (!TryGetColors(fileName, serialized, variations, out var appColors, out var sysColors))
+            if (!TryGetColors(themeRepository, fileName, serialized, variations, out var appColors, out var sysColors))
             {
                 return null;
             }
@@ -82,8 +82,7 @@ namespace GitUI.Theming
             }
         }
 
-        private bool TryGetColors(
-            string fileName,
+        private bool TryGetColors(ThemeRepository themeRepository, string fileName,
             string input,
             string[] allowedClasses,
             out IReadOnlyDictionary<AppColor, Color> applicationColors,
@@ -98,59 +97,82 @@ namespace GitUI.Theming
             systemColors = null;
 
             var parser = new Parser();
-            var stylesheet = parser.Parse(input);
-            foreach (StyleRule rule in stylesheet.StyleRules)
-            {
-                if (rule.Declarations == null || rule.Declarations.Count != 1)
-                {
-                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
-                    return false;
-                }
 
-                var style = rule.Declarations[0];
-                if (style.Name != ColorProperty || !(style.Term is HtmlColor htmlColor))
-                {
-                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
-                    return false;
-                }
-
-                var color = Color.FromArgb(htmlColor.A, htmlColor.R, htmlColor.G, htmlColor.B);
-
-                var classNames = TryGetClassNames(rule);
-
-                var colorName = classNames[0];
-                if (!classNames.Skip(1).All(classSet.Contains))
-                {
-                    continue;
-                }
-
-                specificityByColor.TryGetValue(colorName, out int previousSpecificity);
-                int specificity = classNames.Length;
-                if (specificity < previousSpecificity)
-                {
-                    continue;
-                }
-
-                specificityByColor[colorName] = specificity;
-
-                if (Enum.TryParse(colorName, out AppColor appColorName))
-                {
-                    appColors[appColorName] = color;
-                }
-                else if (Enum.TryParse(colorName, out KnownColor sysColorName))
-                {
-                    sysColors[sysColorName] = color;
-                }
-                else
-                {
-                    PrintTraceWarning(fileName, string.Format(_invalidRule.Text, rule.Value));
-                    return false;
-                }
-            }
+            var isSuccess = TryParseContentAndFillData(fileName, input);
 
             applicationColors = appColors;
             systemColors = sysColors;
-            return true;
+            return isSuccess;
+
+            bool TryParseContentAndFillData(string filePath, string inputContent)
+            {
+                var stylesheet = parser.Parse(inputContent);
+                if (stylesheet.ImportDirectives.Count != 0)
+                {
+                    foreach (var import in stylesheet.ImportDirectives)
+                    {
+                        var importFilePath = themeRepository.FindThemeFile(import.Href);
+                        if (importFilePath == null)
+                        {
+                            continue;
+                        }
+
+                        var importContent = File.ReadAllText(importFilePath);
+                        TryParseContentAndFillData(importFilePath, importContent);
+                    }
+                }
+
+                foreach (StyleRule rule in stylesheet.StyleRules)
+                {
+                    if (rule.Declarations == null || rule.Declarations.Count != 1)
+                    {
+                        PrintTraceWarning(filePath, string.Format(_invalidRule.Text, rule.Value));
+                        return false;
+                    }
+
+                    var style = rule.Declarations[0];
+                    if (style.Name != ColorProperty || !(style.Term is HtmlColor htmlColor))
+                    {
+                        PrintTraceWarning(filePath, string.Format(_invalidRule.Text, rule.Value));
+                        return false;
+                    }
+
+                    var color = Color.FromArgb(htmlColor.A, htmlColor.R, htmlColor.G, htmlColor.B);
+
+                    var classNames = TryGetClassNames(rule);
+
+                    var colorName = classNames[0];
+                    if (!classNames.Skip(1).All(classSet.Contains))
+                    {
+                        continue;
+                    }
+
+                    specificityByColor.TryGetValue(colorName, out int previousSpecificity);
+                    int specificity = classNames.Length;
+                    if (specificity < previousSpecificity)
+                    {
+                        continue;
+                    }
+
+                    specificityByColor[colorName] = specificity;
+
+                    if (Enum.TryParse(colorName, out AppColor appColorName))
+                    {
+                        appColors[appColorName] = color;
+                    }
+                    else if (Enum.TryParse(colorName, out KnownColor sysColorName))
+                    {
+                        sysColors[sysColorName] = color;
+                    }
+                    else
+                    {
+                        PrintTraceWarning(filePath, string.Format(_invalidRule.Text, rule.Value));
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         private string[] TryGetClassNames(StyleRule rule)

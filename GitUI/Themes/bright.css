@@ -1,45 +1,8 @@
-﻿/* System colors */
-.ActiveBorder { color: #b4b4b4 }
-.ActiveCaption { color: #99b4d1 }
-.ActiveCaptionText { color: #000000 }
-.AppWorkspace { color: #ababab }
-.Control { color: #f0f0f0 }
-.ControlDark { color: #a0a0a0 }
-.ControlDarkDark { color: #696969 }
-.ControlLight { color: #e3e3e3 }
-.ControlLightLight { color: #ffffff }
-.ControlText { color: #000000 }
-.Desktop { color: #000000 }
-.GrayText { color: #6d6d6d }
-.Highlight { color: #0078d7 }
-.HighlightText { color: #ffffff }
-.HotTrack { color: #0066cc }
-.InactiveBorder { color: #f4f7fc }
-.InactiveCaption { color: #bfcddb }
-.InactiveCaptionText { color: #000000 }
-.Info { color: #ffffe1 }
-.InfoText { color: #000000 }
-.Menu { color: #f0f0f0 }
-.MenuText { color: #000000 }
-.ScrollBar { color: #c8c8c8 }
-.Window { color: #ffffff }
-.WindowFrame { color: #646464 }
-.WindowText { color: #000000 }
-.GradientActiveCaption { color: #b9d1ea }
-.GradientInactiveCaption { color: #d7e4f2 }
-.MenuBar { color: #f0f0f0 }
-.MenuHighlight { color: #3399ff }
+﻿/* See 'invariant.css' file to know how to create or modify a theme */
+
+@import url("invariant.css");
 
 /* Application colors */
-.OtherTag { color: #808080 }
-.AuthoredHighlight { color: #ffffe0 }
-.HighlightAllOccurences { color: #ffffe0 }
-.Tag { color: #00008b }
-.RemoteBranch { color: #008000 }
-.DiffSection { color: #e6e6e6 }
-.DiffAdded { color: #c8ffc8 }
-.DiffAddedExtra { color: #87ff87 }
-
 .Graph                       { color: #8a0000 } /* hsl(0,   100%, 27%) */
 .Graph.colorblind            { color: #0600a8 } /* hsl(242, 100%, 33%) */
 .Branch                      { color: #8a0000 } /* hsl(0,   100%, 27%) */

@@ -40,7 +40,7 @@ namespace GitUI.Theming
         public Theme GetTheme(ThemeId id, string[] variations)
         {
             string path = GetPath(id);
-            return _persistence.Load(path, id, variations);
+            return _persistence.Load(this, path, id, variations);
         }
 
         public void Save(Theme theme) =>
@@ -84,6 +84,29 @@ namespace GitUI.Theming
                     .Select(_ => Path.GetFileNameWithoutExtension(_.Name))
                     .Select(name => new ThemeId(name, false))
                 : Enumerable.Empty<ThemeId>();
+        }
+
+        public string FindThemeFile(string filename)
+        {
+            var filePath = Path.Combine(AppThemesDirectory, filename);
+
+            if (File.Exists(filePath))
+            {
+                return filePath;
+            }
+
+            if (UserThemesDirectory == null)
+            {
+                return null;
+            }
+
+            filePath = Path.Combine(UserThemesDirectory, filename);
+            if (File.Exists(filePath))
+            {
+                return filePath;
+            }
+
+            return null;
         }
 
         private string GetPath(ThemeId id)

@@ -586,14 +586,20 @@
       </Component>
     </DirectoryRef>
     <DirectoryRef Id="ThemesDir">
-      <Component Id="invariant.css" Guid="*">
+      <Component Id="Themes.README.md" Guid="*">
+        <File Source="$(var.ArtifactsPublishPath)\Themes\README.md" />
+      </Component>
+      <Component Id="Themes.invariant.css" Guid="*">
         <File Source="$(var.ArtifactsPublishPath)\Themes\invariant.css" />
       </Component>
-      <Component Id="dark.css" Guid="*">
+      <Component Id="Themes.dark.css" Guid="*">
         <File Source="$(var.ArtifactsPublishPath)\Themes\dark.css" />
       </Component>
-      <Component Id="darksilver.css" Guid="*">
+      <Component Id="Themes.darksilver.css" Guid="*">
         <File Source="$(var.ArtifactsPublishPath)\Themes\darksilver.css" />
+      </Component>
+      <Component Id="Themes.bright.css" Guid="*">
+        <File Source="$(var.ArtifactsPublishPath)\Themes\bright.css" />
       </Component>
     </DirectoryRef>
     <DirectoryRef Id="PluginsDir">
@@ -1584,9 +1590,11 @@
       <ComponentRef Id="EasyHook.dll" />
       <ComponentRef Id="EasyHook32.dll" />
       <ComponentRef Id="EasyHook64.dll" />
-      <ComponentRef Id="invariant.css" />
-      <ComponentRef Id="dark.css" />
-      <ComponentRef Id="darksilver.css" />
+      <ComponentRef Id="Themes.README.md" />
+      <ComponentRef Id="Themes.invariant.css" />
+      <ComponentRef Id="Themes.dark.css" />
+      <ComponentRef Id="Themes.darksilver.css" />
+      <ComponentRef Id="Themes.bright.css" />
       <!-- Remove unused dll, installed in versions <= 2.31 -->
       <ComponentRef Id="GithubSharp.Core.dll" />
       <!-- Remove unused dll, installed in versions <= 2.31 -->

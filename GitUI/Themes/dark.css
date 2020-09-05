@@ -1,4 +1,4 @@
-/* See 'invariant.css' file to know how to create or modify a theme */
+/* see Themes\README.md (this directory) to know how to create or modify a theme */
 
 /* System colors */
 .ActiveBorder { color: #5e6060 }
@@ -33,19 +33,18 @@
 .MenuHighlight { color: #6290e6 }
 
 /* Application colors */
-.OtherTag { color: #a1a1a1 }
-.AuthoredHighlight { color: #373832 }
-.HighlightAllOccurences { color: #606020 }
-.Tag { color: #408080 }
-.Graph { color: #882d00 }
-.RemoteBranch { color: #00d76b }
-.DiffSection { color: #4f4f4f }
-.DiffAdded { color: #054123 }
-.DiffAddedExtra { color: #046c38 }
-
+.OtherTag                    { color: #a1a1a1 }
+.AuthoredHighlight           { color: #373832 }
+.HighlightAllOccurences      { color: #606020 }
+.Tag                         { color: #408080 }
+.Graph                       { color: #882d00 }
 .Branch                      { color: #ff8080 } /* hsl(0,   100%, 75%) */
 .Branch.colorblind           { color: #0080ff } /* hsl(210, 100%, 50%) */
+.RemoteBranch                { color: #00d76b }
+.DiffSection                 { color: #4f4f4f }
 .DiffRemoved                 { color: #4b0606 } /* hsl(0,   85%,  16%) */
 .DiffRemoved.colorblind      { color: #080646 } /* hsl(242, 84%,  15%) */
 .DiffRemovedExtra            { color: #6c0404 } /* hsl(0,   93%,  22%) */
 .DiffRemovedExtra.colorblind { color: #09058a } /* hsl(242, 93%,  28%) */
+.DiffAdded                   { color: #054224 }
+.DiffAddedExtra              { color: #046c38 }

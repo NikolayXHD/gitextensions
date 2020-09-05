@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using ExCSS;
+using GitCommands;
 using GitExtUtils.GitUI.Theming;
 using ResourceManager;
 
@@ -26,14 +27,16 @@ namespace GitUI.Theming
         private readonly TranslationString _invalidRule =
             new TranslationString("Invalid rule: {0}");
 
-        public Theme Load(ThemeRepository themeRepository, string fileName, ThemeId id, string[] variations)
+        public ICssUrlResolver CssUrlResolver { get; set; }
+
+        public Theme Load(string fileName, ThemeId id, string[] variations)
         {
             if (!TryReadFile(fileName, out string serialized))
             {
                 return null;
             }
 
-            if (!TryGetColors(themeRepository, fileName, serialized, variations, out var appColors, out var sysColors))
+            if (!TryGetColors(fileName, serialized, variations, out var appColors, out var sysColors))
             {
                 return null;
             }
@@ -82,7 +85,8 @@ namespace GitUI.Theming
             }
         }
 
-        private bool TryGetColors(ThemeRepository themeRepository, string fileName,
+        private bool TryGetColors(
+            string fileName,
             string input,
             string[] allowedClasses,
             out IReadOnlyDictionary<AppColor, Color> applicationColors,
@@ -98,27 +102,41 @@ namespace GitUI.Theming
 
             var parser = new Parser();
 
-            var isSuccess = TryParseContentAndFillData(fileName, input);
+            var isSuccess = TryParseCss(fileName, input, cssImportChain: Array.Empty<string>());
 
             applicationColors = appColors;
             systemColors = sysColors;
             return isSuccess;
 
-            bool TryParseContentAndFillData(string filePath, string inputContent)
+            bool TryParseCss(string filePath, string inputContent, string[] cssImportChain)
             {
                 var stylesheet = parser.Parse(inputContent);
                 if (stylesheet.ImportDirectives.Count != 0)
                 {
                     foreach (var import in stylesheet.ImportDirectives)
                     {
-                        var importFilePath = themeRepository.FindThemeFile(import.Href);
+                        var importFilePath = CssUrlResolver.ResolveCssUrl(import.Href);
                         if (importFilePath == null)
                         {
-                            continue;
+                            PrintTraceWarning(filePath, $"Failed to resolve import: {import.Href}");
+                            return false;
                         }
 
-                        var importContent = File.ReadAllText(importFilePath);
-                        TryParseContentAndFillData(importFilePath, importContent);
+                        if (cssImportChain.Any(_ => StringComparer.OrdinalIgnoreCase.Equals(_, importFilePath)))
+                        {
+                            PrintTraceWarning(filePath, $"Cycling css imports: {string.Join(",", cssImportChain.Append(importFilePath))}");
+                            return false;
+                        }
+
+                        if (!TryReadFile(importFilePath, out string importContent))
+                        {
+                            return false;
+                        }
+
+                        if (!TryParseCss(importFilePath, importContent, cssImportChain.Append(importFilePath)))
+                        {
+                            return false;
+                        }
                     }
                 }
 

@@ -8,16 +8,19 @@ using JetBrains.Annotations;
 
 namespace GitUI.Theming
 {
-    public class ThemeRepository
+    public class ThemeRepository : ICssUrlResolver
     {
         private const string Subdirectory = "Themes";
         private const string Extension = ".css";
+        private const string CssVariableUserThemesDirectory = "$user-defined/";
 
         private readonly ThemePersistence _persistence;
 
         public ThemeRepository(ThemePersistence persistence)
         {
             _persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
+            _persistence.CssUrlResolver = this;
+
             string appDirectory = AppSettings.GetGitExtensionsDirectory() ??
                 throw new InvalidOperationException("Missing application directory");
             AppThemesDirectory = Path.Combine(appDirectory, Subdirectory);
@@ -40,7 +43,7 @@ namespace GitUI.Theming
         public Theme GetTheme(ThemeId id, string[] variations)
         {
             string path = GetPath(id);
-            return _persistence.Load(this, path, id, variations);
+            return _persistence.Load(path, id, variations);
         }
 
         public void Save(Theme theme) =>
@@ -86,42 +89,58 @@ namespace GitUI.Theming
                 : Enumerable.Empty<ThemeId>();
         }
 
-        public string FindThemeFile(string filename)
+        string ICssUrlResolver.ResolveCssUrl(string url)
         {
-            var filePath = Path.Combine(AppThemesDirectory, filename);
-
-            if (File.Exists(filePath))
+            if (url.EndsWith(Extension, StringComparison.OrdinalIgnoreCase))
             {
-                return filePath;
+                url = url.Substring(0, url.Length - Extension.Length);
             }
 
-            if (UserThemesDirectory == null)
+            ThemeId id = url.StartsWith(CssVariableUserThemesDirectory)
+                ? new ThemeId(url.Substring(CssVariableUserThemesDirectory.Length), isBuiltin: false)
+                : new ThemeId(url, isBuiltin: true);
+
+            try
+            {
+                return GetPath(id);
+            }
+            catch (ThemeNotFoundException)
             {
                 return null;
             }
-
-            filePath = Path.Combine(UserThemesDirectory, filename);
-            if (File.Exists(filePath))
-            {
-                return filePath;
-            }
-
-            return null;
         }
 
         private string GetPath(ThemeId id)
         {
+            string path;
             if (id.IsBuiltin)
             {
-                return Path.Combine(AppThemesDirectory, id.Name + Extension);
+                path = Path.Combine(AppThemesDirectory, id.Name + Extension);
             }
-
-            if (UserThemesDirectory == null)
+            else
             {
-                throw new InvalidOperationException("There is no directory for custom user themes in portable mode");
+                if (UserThemesDirectory == null)
+                {
+                    throw new ThemeNotFoundException("There is no directory for custom user themes in portable mode");
+                }
+
+                path = Path.Combine(UserThemesDirectory, id.Name + Extension);
             }
 
-            return Path.Combine(UserThemesDirectory, id.Name + Extension);
+            if (!File.Exists(path))
+            {
+                throw new ThemeNotFoundException($"Theme file not found: {path}");
+            }
+
+            return path;
+        }
+
+        private class ThemeNotFoundException : Exception
+        {
+            public ThemeNotFoundException(string message)
+                : base(message)
+            {
+            }
         }
     }
 }

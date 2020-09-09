@@ -16,17 +16,16 @@ namespace GitUI.Theming
     public class ThemePersistence : IThemePersistence
     {
         private const string Format = ".{0} {{ color: #{1:x6} }}";
-        private readonly ThemeCssLoader _themeLoader;
+        private readonly IThemeLoader _themeLoader;
 
-        public ThemePersistence(ThemeCssLoader themeLoader)
+        public ThemePersistence(IThemeLoader themeLoader)
         {
             _themeLoader = themeLoader;
         }
 
         public Theme Load(string themeFileName, ThemeId themeId, IReadOnlyList<string> variations)
         {
-            _themeLoader.LoadCss(themeFileName, allowedClasses: variations);
-            return new Theme(_themeLoader.AppColors, _themeLoader.SysColors, themeId);
+            return _themeLoader.LoadTheme(themeFileName, themeId, allowedClasses: variations);
         }
 
         public void Save(Theme theme, string themeFileName)

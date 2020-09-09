@@ -35,7 +35,7 @@ namespace GitUI.Theming
         }
 
         public ThemeRepository()
-            : this(new ThemePersistence(new ThemeCssLoader(new ThemeCssUrlResolver(new ThemePathProvider()))), new ThemePathProvider())
+            : this(new ThemePersistence(new ThemeLoader(new ThemeCssUrlResolver(new ThemePathProvider()))), new ThemePathProvider())
         {
         }
 

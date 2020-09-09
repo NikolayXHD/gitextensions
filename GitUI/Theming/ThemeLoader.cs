@@ -9,7 +9,12 @@ using GitExtUtils.GitUI.Theming;
 
 namespace GitUI.Theming
 {
-    public class ThemeCssLoader
+    public interface IThemeLoader
+    {
+        Theme LoadTheme(string themeFileName, ThemeId themeId, in IReadOnlyList<string> allowedClasses);
+    }
+
+    public class ThemeLoader : IThemeLoader
     {
         private const string ClassSelector = ".";
         private const string ColorProperty = "color";
@@ -18,37 +23,22 @@ namespace GitUI.Theming
         private readonly Parser _parser;
         private readonly IThemeCssUrlResolver _urlResolver;
 
-        private readonly Dictionary<AppColor, Color> _appColors = new Dictionary<AppColor, Color>();
-        private readonly Dictionary<KnownColor, Color> _sysColors = new Dictionary<KnownColor, Color>();
-        private readonly Dictionary<string, int> _specificityByColor = new Dictionary<string, int>();
-
-        private bool _parseCalled;
-
-        public ThemeCssLoader(IThemeCssUrlResolver urlResolver)
+        public ThemeLoader(IThemeCssUrlResolver urlResolver)
         {
             _parser = new Parser();
             _urlResolver = urlResolver;
         }
 
-        public IReadOnlyDictionary<AppColor, Color> AppColors => _appColors;
-
-        public IReadOnlyDictionary<KnownColor, Color> SysColors => _sysColors;
-
-        public void LoadCss(string themeFileName, in IReadOnlyList<string> allowedClasses)
+        public Theme LoadTheme(string themeFileName, ThemeId themeId, in IReadOnlyList<string> allowedClasses)
         {
-            if (_parseCalled)
-            {
-                throw new InvalidOperationException($"{nameof(ThemeCssLoader)} only supports 1 call to {nameof(LoadCss)}");
-            }
-
-            _parseCalled = true;
-
-            LoadCssImpl(themeFileName, cssImportChain: new[] { themeFileName }, allowedClasses);
+            var themeColors = new ThemeColors();
+            LoadThemeColors(themeFileName, cssImportChain: new[] { themeFileName }, allowedClasses, themeColors);
+            return new Theme(themeColors.AppColors, themeColors.SysColors, themeId);
         }
 
-        private void LoadCssImpl(string themeFileName, string[] cssImportChain, in IReadOnlyList<string> allowedClasses)
+        private void LoadThemeColors(string themeFileName, string[] cssImportChain, in IReadOnlyList<string> allowedClasses, ThemeColors themeColors)
         {
-            string content = ReadFile(themeFileName);
+            string content = ReadThemeFile(themeFileName);
             var stylesheet = _parser.Parse(content);
             if (stylesheet.Errors.Count > 0)
             {
@@ -58,16 +48,16 @@ namespace GitUI.Theming
 
             foreach (var importDirective in stylesheet.ImportDirectives)
             {
-                Import(themeFileName, importDirective, allowedClasses, cssImportChain);
+                ImportTheme(themeFileName, importDirective, allowedClasses, cssImportChain, themeColors);
             }
 
             foreach (StyleRule rule in stylesheet.StyleRules)
             {
-                ParseRule(themeFileName, rule, allowedClasses);
+                ParseRule(themeFileName, rule, allowedClasses, themeColors);
             }
         }
 
-        private string ReadFile(string themeFileName)
+        private static string ReadThemeFile(string themeFileName)
         {
             var fileInfo = new FileInfo(themeFileName);
             if (fileInfo.Exists && fileInfo.Length > MaxFileSize)
@@ -85,7 +75,7 @@ namespace GitUI.Theming
             }
         }
 
-        private void Import(string themeFileName, ImportRule importRule, in IReadOnlyList<string> allowedClasses, string[] cssImportChain)
+        private void ImportTheme(string themeFileName, ImportRule importRule, in IReadOnlyList<string> allowedClasses, string[] cssImportChain, ThemeColors themeColors)
         {
             string importFilePath;
             try
@@ -97,16 +87,16 @@ namespace GitUI.Theming
                 throw new ThemeException($"Failed to resolve CSS import {importRule.Href}: {ex.Message}", themeFileName, ex);
             }
 
-            if (cssImportChain.Any(_ => StringComparer.OrdinalIgnoreCase.Equals((string)_, importFilePath)))
+            if (cssImportChain.Any(cssImport => StringComparer.OrdinalIgnoreCase.Equals(cssImport, importFilePath)))
             {
                 string importChainText = string.Join("->", cssImportChain.Append(importFilePath));
                 throw new ThemeException($"Cycling CSS import {importRule.Href} {importChainText}", themeFileName);
             }
 
-            LoadCssImpl(importFilePath, cssImportChain.Append(importFilePath), allowedClasses);
+            LoadThemeColors(importFilePath, cssImportChain.Append(importFilePath), allowedClasses, themeColors);
         }
 
-        private void ParseRule(string themeFileName, StyleRule rule, in IReadOnlyList<string> allowedClasses)
+        private static void ParseRule(string themeFileName, StyleRule rule, in IReadOnlyList<string> allowedClasses, ThemeColors themeColors)
         {
             var color = GetColor(themeFileName, rule);
 
@@ -118,30 +108,30 @@ namespace GitUI.Theming
                 return;
             }
 
-            _specificityByColor.TryGetValue(colorName, out int previousSpecificity);
+            themeColors.SpecificityByColor.TryGetValue(colorName, out int previousSpecificity);
             int specificity = classNames.Length;
             if (specificity < previousSpecificity)
             {
                 return;
             }
 
-            _specificityByColor[colorName] = specificity;
+            themeColors.SpecificityByColor[colorName] = specificity;
             if (Enum.TryParse(colorName, out AppColor appColorName))
             {
-                _appColors[appColorName] = color;
+                themeColors.AppColors[appColorName] = color;
                 return;
             }
 
             if (Enum.TryParse(colorName, out KnownColor sysColorName))
             {
-                _sysColors[sysColorName] = color;
+                themeColors.SysColors[sysColorName] = color;
                 return;
             }
 
             throw StyleRuleThemeException(rule, themeFileName);
         }
 
-        private string[] GetClassNames(string themeFileName, StyleRule rule)
+        private static string[] GetClassNames(string themeFileName, StyleRule rule)
         {
             var selector = rule.Selector;
             if (!(selector is SimpleSelector simpleSelector))
@@ -160,7 +150,7 @@ namespace GitUI.Theming
                 .Split(new[] { ClassSelector }, StringSplitOptions.RemoveEmptyEntries);
         }
 
-        private Color GetColor(string themeFileName, StyleRule rule)
+        private static Color GetColor(string themeFileName, StyleRule rule)
         {
             if (rule.Declarations is null || rule.Declarations.Count != 1)
             {
@@ -178,5 +168,12 @@ namespace GitUI.Theming
 
         private static ThemeException StyleRuleThemeException(StyleRule styleRule, string themePath)
             => new ThemeException($"Invalid CSS rule '{styleRule.Value}'", themePath);
+
+        private class ThemeColors
+        {
+            public readonly Dictionary<AppColor, Color> AppColors = new Dictionary<AppColor, Color>();
+            public readonly Dictionary<KnownColor, Color> SysColors = new Dictionary<KnownColor, Color>();
+            public readonly Dictionary<string, int> SpecificityByColor = new Dictionary<string, int>();
+        }
     }
 }

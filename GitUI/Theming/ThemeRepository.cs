@@ -35,7 +35,7 @@ namespace GitUI.Theming
         }
 
         public ThemeRepository()
-            : this(new ThemePersistence(new ThemeCssUrlResolver(new ThemePathProvider())), new ThemePathProvider())
+            : this(new ThemePersistence(new ThemeCssLoader(new ThemeCssUrlResolver(new ThemePathProvider()))), new ThemePathProvider())
         {
         }
 
@@ -45,7 +45,7 @@ namespace GitUI.Theming
         private string UserThemesDirectory { get; }
         public string InvariantThemeName { get; } = "invariant";
 
-        public Theme GetTheme(ThemeId themeId, string[] variations)
+        public Theme GetTheme(ThemeId themeId, IReadOnlyList<string> variations)
         {
             string themePath = _themePathProvider.GetThemePath(themeId);
             return _persistence.Load(themePath, themeId, variations);

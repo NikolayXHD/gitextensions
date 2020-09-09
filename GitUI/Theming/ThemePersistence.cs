@@ -9,35 +9,34 @@ namespace GitUI.Theming
 {
     public interface IThemePersistence
     {
-        Theme Load(string fileName, ThemeId id, IReadOnlyList<string> variations);
-        void Save(Theme theme, string fileName);
+        Theme Load(string themeFileName, ThemeId id, IReadOnlyList<string> variations);
+        void Save(Theme theme, string themeFileName);
     }
 
     public class ThemePersistence : IThemePersistence
     {
         private const string Format = ".{0} {{ color: #{1:x6} }}";
-        private readonly IThemeCssUrlResolver _themeCssUrlResolver;
+        private readonly ThemeCssLoader _themeLoader;
 
-        public ThemePersistence(IThemeCssUrlResolver themeCssUrlResolver)
+        public ThemePersistence(ThemeCssLoader themeLoader)
         {
-            _themeCssUrlResolver = themeCssUrlResolver;
+            _themeLoader = themeLoader;
         }
 
-        public Theme Load(string fileName, ThemeId id, IReadOnlyList<string> variations)
+        public Theme Load(string themeFileName, ThemeId themeId, IReadOnlyList<string> variations)
         {
-            var themeLoader = new ThemeCssLoader(_themeCssUrlResolver, allowedClasses: variations);
-            themeLoader.LoadCss(fileName);
-            return new Theme(themeLoader.AppColors, themeLoader.SysColors, id);
+            _themeLoader.LoadCss(themeFileName, allowedClasses: variations);
+            return new Theme(_themeLoader.AppColors, _themeLoader.SysColors, themeId);
         }
 
-        public void Save(Theme theme, string fileName)
+        public void Save(Theme theme, string themeFileName)
         {
             string serialized = string.Join(
                 Environment.NewLine,
                 theme.SysColorValues.Select(_ => string.Format(Format, _.Key, ToRbgInt(_.Value))).Concat(
                     theme.AppColorValues.Select(_ => string.Format(Format, _.Key, ToRbgInt(_.Value)))));
 
-            File.WriteAllText(fileName, serialized);
+            File.WriteAllText(themeFileName, serialized);
 
             static int ToRbgInt(Color с) => с.ToArgb() & 0x00ffffff;
         }

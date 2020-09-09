@@ -16,8 +16,8 @@ namespace GitUI.Theming
         private const int MaxFileSize = 1024 * 1024;
 
         private readonly Parser _parser;
-        private readonly ICssUrlResolver _urlResolver;
-        private readonly string[] _allowedClasses;
+        private readonly IThemeCssUrlResolver _urlResolver;
+        private readonly IReadOnlyList<string> _allowedClasses;
 
         private readonly Dictionary<AppColor, Color> _appColors = new Dictionary<AppColor, Color>();
         private readonly Dictionary<KnownColor, Color> _sysColors = new Dictionary<KnownColor, Color>();
@@ -25,7 +25,7 @@ namespace GitUI.Theming
 
         private bool _parseCalled;
 
-        public ThemeCssLoader(ICssUrlResolver urlResolver, string[] allowedClasses)
+        public ThemeCssLoader(IThemeCssUrlResolver urlResolver, IReadOnlyList<string> allowedClasses)
         {
             _parser = new Parser();
             _urlResolver = urlResolver;
@@ -54,8 +54,8 @@ namespace GitUI.Theming
             var stylesheet = _parser.Parse(content);
             if (stylesheet.Errors.Count > 0)
             {
-                throw new ThemeRepositoryException(
-                    $"Error parsing css:{Environment.NewLine}{string.Join(Environment.NewLine, stylesheet.Errors)}", path);
+                throw new ThemeException(
+                    $"Error parsing CSS:{Environment.NewLine}{string.Join(Environment.NewLine, stylesheet.Errors)}", path);
             }
 
             foreach (var importDirective in stylesheet.ImportDirectives)
@@ -74,7 +74,7 @@ namespace GitUI.Theming
             var fileInfo = new FileInfo(path);
             if (fileInfo.Exists && fileInfo.Length > MaxFileSize)
             {
-                throw new ThemeRepositoryException($"File too large, maximum is {MaxFileSize} bytes", path);
+                throw new ThemeException($"Theme file size exceeds {MaxFileSize:#,##0} bytes", path);
             }
 
             try
@@ -83,7 +83,7 @@ namespace GitUI.Theming
             }
             catch (SystemException ex)
             {
-                throw new ThemeRepositoryException(ex.Message, path, ex);
+                throw new ThemeException(ex.Message, path, ex);
             }
         }
 
@@ -94,15 +94,15 @@ namespace GitUI.Theming
             {
                 importFilePath = _urlResolver.ResolveCssUrl(importRule.Href);
             }
-            catch (CssUrlResolverException ex)
+            catch (ThemeCssUrlResolverException ex)
             {
-                throw new ThemeRepositoryException($"Failed to resolve css import {importRule.Href}: {ex.Message}", path, ex);
+                throw new ThemeException($"Failed to resolve CSS import {importRule.Href}: {ex.Message}", path, ex);
             }
 
             if (cssImportChain.Any(_ => StringComparer.OrdinalIgnoreCase.Equals((string)_, importFilePath)))
             {
                 string importChainText = string.Join("->", cssImportChain.Append(importFilePath));
-                throw new ThemeRepositoryException($"Cycling css import {importRule.Href} {importChainText}", path);
+                throw new ThemeException($"Cycling CSS import {importRule.Href} {importChainText}", path);
             }
 
             LoadCssImpl(importFilePath, cssImportChain.Append(importFilePath));
@@ -140,7 +140,7 @@ namespace GitUI.Theming
                 return;
             }
 
-            throw new ThemeRepositoryException(rule, path);
+            throw StyleRuleThemeException(rule, path);
         }
 
         private string[] GetClassNames(StyleRule rule, string path)
@@ -148,13 +148,13 @@ namespace GitUI.Theming
             var selector = rule.Selector;
             if (!(selector is SimpleSelector simpleSelector))
             {
-                throw new ThemeRepositoryException(rule, path);
+                throw StyleRuleThemeException(rule, path);
             }
 
             var selectorText = simpleSelector.ToString();
             if (!selectorText.StartsWith(ClassSelector))
             {
-                throw new ThemeRepositoryException(rule, path);
+                throw StyleRuleThemeException(rule, path);
             }
 
             return selectorText
@@ -164,18 +164,21 @@ namespace GitUI.Theming
 
         private Color GetColor(StyleRule rule, string path)
         {
-            if (rule.Declarations == null || rule.Declarations.Count != 1)
+            if (rule.Declarations is null || rule.Declarations.Count != 1)
             {
-                throw new ThemeRepositoryException(rule, path);
+                throw StyleRuleThemeException(rule, path);
             }
 
             var style = rule.Declarations[0];
             if (style.Name != ColorProperty || !(style.Term is HtmlColor htmlColor))
             {
-                throw new ThemeRepositoryException(rule, path);
+                throw StyleRuleThemeException(rule, path);
             }
 
             return Color.FromArgb(htmlColor.A, htmlColor.R, htmlColor.G, htmlColor.B);
         }
+
+        private static ThemeException StyleRuleThemeException(StyleRule styleRule, string themePath)
+            => new ThemeException($"Invalid CSS rule '{styleRule.Value}'", themePath);
     }
 }

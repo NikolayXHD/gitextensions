@@ -11,6 +11,7 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
     public partial class ColorsSettingsPage : SettingsPageWithHeader
     {
         private int _updateThemeSettingsCounter;
+        private readonly ThemeRepository _themeRepository = new ThemeRepository();
 
         private static readonly TranslationString FormatBuiltinThemeName =
             new TranslationString("{0}");
@@ -85,10 +86,9 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
             chkHighlightAuthored.Checked = AppSettings.HighlightAuthoredRevisions;
 
             BeginUpdateThemeSettings();
-            var themeRepository = new ThemeRepository(new ThemePersistence());
             _NO_TRANSLATE_cbSelectTheme.Items.Clear();
             _NO_TRANSLATE_cbSelectTheme.Items.Add(new FormattedThemeId(ThemeId.Default));
-            _NO_TRANSLATE_cbSelectTheme.Items.AddRange(themeRepository.GetThemeIds()
+            _NO_TRANSLATE_cbSelectTheme.Items.AddRange(_themeRepository.GetThemeIds()
                 .Select(id => new FormattedThemeId(id))
                 .Cast<object>()
                 .ToArray());

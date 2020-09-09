@@ -8,18 +8,18 @@ using JetBrains.Annotations;
 
 namespace GitUI.Theming
 {
-    public class ThemeRepository : ICssUrlResolver
+    public class ThemeRepository
     {
         private const string Subdirectory = "Themes";
         private const string Extension = ".css";
-        private const string CssVariableUserThemesDirectory = "{UserAppData}/";
 
-        private readonly ThemePersistence _persistence;
+        private readonly IThemePersistence _persistence;
+        private readonly IThemePathProvider _themePathProvider;
 
-        public ThemeRepository(ThemePersistence persistence)
+        public ThemeRepository(IThemePersistence persistence, IThemePathProvider themePathProvider)
         {
             _persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
-            _persistence.CssUrlResolver = this;
+            _themePathProvider = themePathProvider ?? throw new ArgumentNullException(nameof(themePathProvider));
 
             string appDirectory = AppSettings.GetGitExtensionsDirectory() ??
                 throw new InvalidOperationException("Missing application directory");
@@ -34,20 +34,25 @@ namespace GitUI.Theming
                 : Path.Combine(userDirectory, Subdirectory);
         }
 
+        public ThemeRepository()
+            : this(new ThemePersistence(new ThemeCssUrlResolver(new ThemePathProvider())), new ThemePathProvider())
+        {
+        }
+
         private string AppThemesDirectory { get; }
 
         [CanBeNull]
         private string UserThemesDirectory { get; }
         public string InvariantThemeName { get; } = "invariant";
 
-        public Theme GetTheme(ThemeId id, string[] variations)
+        public Theme GetTheme(ThemeId themeId, string[] variations)
         {
-            string path = GetPath(id);
-            return _persistence.Load(path, id, variations);
+            string themePath = _themePathProvider.GetThemePath(themeId);
+            return _persistence.Load(themePath, themeId, variations);
         }
 
         public void Save(Theme theme) =>
-            _persistence.Save(theme, GetPath(theme.Id));
+            _persistence.Save(theme, _themePathProvider.GetThemePath(theme.Id));
 
         public Theme GetInvariantTheme() =>
             GetTheme(new ThemeId(InvariantThemeName, isBuiltin: true), variations: Array.Empty<string>());
@@ -55,27 +60,27 @@ namespace GitUI.Theming
         public IEnumerable<ThemeId> GetThemeIds() =>
             GetBuiltinThemeIds().Concat(GetUserCustomizedThemeIds());
 
-        private IEnumerable<ThemeId> GetBuiltinThemeIds() =>
-            new DirectoryInfo(AppThemesDirectory)
-                .EnumerateFiles("*" + Extension, SearchOption.TopDirectoryOnly)
-                .Select(_ => Path.GetFileNameWithoutExtension(_.Name))
-                .Where(name => !name.Equals(InvariantThemeName, StringComparison.OrdinalIgnoreCase))
-                .Select(name => new ThemeId(name, true));
-
-        public void Delete(ThemeId id)
+        public void Delete(ThemeId themeId)
         {
-            if (id.IsBuiltin)
+            if (themeId.IsBuiltin)
             {
                 throw new InvalidOperationException("Only user-defined theme can be deleted");
             }
 
-            var path = GetPath(id);
-            File.Delete(path);
+            var themePath = _themePathProvider.GetThemePath(themeId);
+            File.Delete(themePath);
         }
+
+        private IEnumerable<ThemeId> GetBuiltinThemeIds() =>
+            new DirectoryInfo(AppThemesDirectory)
+                .EnumerateFiles("*" + Extension, SearchOption.TopDirectoryOnly)
+                .Select(fileInfo => Path.GetFileNameWithoutExtension(fileInfo.Name))
+                .Where(fileName => !fileName.Equals(InvariantThemeName, StringComparison.OrdinalIgnoreCase))
+                .Select(fileName => new ThemeId(fileName, true));
 
         private IEnumerable<ThemeId> GetUserCustomizedThemeIds()
         {
-            if (UserThemesDirectory == null)
+            if (UserThemesDirectory is null)
             {
                 return Enumerable.Empty<ThemeId>();
             }
@@ -84,58 +89,9 @@ namespace GitUI.Theming
             return directory.Exists
                 ? directory
                     .EnumerateFiles("*" + Extension, SearchOption.TopDirectoryOnly)
-                    .Select(_ => Path.GetFileNameWithoutExtension(_.Name))
-                    .Select(name => new ThemeId(name, false))
+                    .Select(fileInfo => Path.GetFileNameWithoutExtension(fileInfo.Name))
+                    .Select(fileName => new ThemeId(fileName, false))
                 : Enumerable.Empty<ThemeId>();
-        }
-
-        string ICssUrlResolver.ResolveCssUrl(string url)
-        {
-            if (url.EndsWith(Extension, StringComparison.OrdinalIgnoreCase))
-            {
-                url = url.Substring(0, url.Length - Extension.Length);
-            }
-
-            ThemeId id = url.StartsWith(CssVariableUserThemesDirectory)
-                ? new ThemeId(url.Substring(CssVariableUserThemesDirectory.Length), isBuiltin: false)
-                : new ThemeId(url, isBuiltin: true);
-
-            string path;
-            try
-            {
-                path = GetPath(id);
-            }
-            catch (InvalidOperationException ex)
-            {
-                throw new CssUrlResolverException(ex.Message);
-            }
-
-            if (!File.Exists(path))
-            {
-                throw new CssUrlResolverException($"File not found: {path}");
-            }
-
-            return path;
-        }
-
-        private string GetPath(ThemeId id)
-        {
-            string path;
-            if (id.IsBuiltin)
-            {
-                path = Path.Combine(AppThemesDirectory, id.Name + Extension);
-            }
-            else
-            {
-                if (UserThemesDirectory == null)
-                {
-                    throw new InvalidOperationException("There is no directory for custom user themes in portable mode");
-                }
-
-                path = Path.Combine(UserThemesDirectory, id.Name + Extension);
-            }
-
-            return path;
         }
     }
 }

@@ -13,12 +13,12 @@ namespace GitUI.Theming
     {
         public static ThemeSettings Settings { get; private set; } = ThemeSettings.Default;
 
-        private static ThemeRepository Repository { get; } = new ThemeRepository(new ThemePersistence());
+        private static ThemeRepository Repository { get; } = new ThemeRepository();
 
         public static void Load()
         {
             new ThemeMigration(Repository).Migrate();
-            Settings = LoadTheme();
+            Settings = LoadThemeSettings();
             ColorHelper.ThemeSettings = Settings;
             ThemeFix.ThemeSettings = Settings;
             Win32ThemeHooks.ThemeSettings = Settings;
@@ -41,14 +41,14 @@ namespace GitUI.Theming
             ResetGdiCaches();
         }
 
-        private static ThemeSettings LoadTheme()
+        private static ThemeSettings LoadThemeSettings()
         {
             Theme invariantTheme;
             try
             {
                 invariantTheme = Repository.GetInvariantTheme();
             }
-            catch (ThemeRepositoryException ex)
+            catch (ThemeException ex)
             {
                 // Not good, ColorHelper needs actual InvariantTheme to correctly transform colors.
                 MessageBoxes.ShowError(null, $"Failed to load invariant theme: {ex}");
@@ -66,7 +66,7 @@ namespace GitUI.Theming
             {
                 theme = Repository.GetTheme(themeId, AppSettings.ThemeVariations);
             }
-            catch (ThemeRepositoryException ex)
+            catch (ThemeException ex)
             {
                 MessageBoxes.ShowError(null, $"Failed to load {(themeId.IsBuiltin ? "standard" : "user")} theme {themeId.Name}: {ex}");
                 return new ThemeSettings(Theme.Default, invariantTheme, AppSettings.UseSystemVisualStyle);

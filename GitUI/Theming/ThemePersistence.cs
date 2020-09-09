@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -6,15 +7,25 @@ using GitExtUtils.GitUI.Theming;
 
 namespace GitUI.Theming
 {
-    public class ThemePersistence
+    public interface IThemePersistence
+    {
+        Theme Load(string fileName, ThemeId id, IReadOnlyList<string> variations);
+        void Save(Theme theme, string fileName);
+    }
+
+    public class ThemePersistence : IThemePersistence
     {
         private const string Format = ".{0} {{ color: #{1:x6} }}";
+        private readonly IThemeCssUrlResolver _themeCssUrlResolver;
 
-        public ICssUrlResolver CssUrlResolver { get; set; }
-
-        public Theme Load(string fileName, ThemeId id, string[] variations)
+        public ThemePersistence(IThemeCssUrlResolver themeCssUrlResolver)
         {
-            var themeLoader = new ThemeCssLoader(CssUrlResolver, allowedClasses: variations);
+            _themeCssUrlResolver = themeCssUrlResolver;
+        }
+
+        public Theme Load(string fileName, ThemeId id, IReadOnlyList<string> variations)
+        {
+            var themeLoader = new ThemeCssLoader(_themeCssUrlResolver, allowedClasses: variations);
             themeLoader.LoadCss(fileName);
             return new Theme(themeLoader.AppColors, themeLoader.SysColors, id);
         }

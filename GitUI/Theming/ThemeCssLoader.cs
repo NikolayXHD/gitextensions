@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using ExCSS;
 using GitCommands;
 using GitExtUtils.GitUI.Theming;
-using ResourceManager;
 
 namespace GitUI.Theming
 {
@@ -15,11 +13,7 @@ namespace GitUI.Theming
     {
         private const string ClassSelector = ".";
         private const string ColorProperty = "color";
-
-        private readonly TranslationString _invalidRule = new TranslationString("Invalid rule: {0}");
-        private readonly TranslationString _failedToLoadThemeFrom = new TranslationString("Failed to load theme from {0}");
-        private readonly TranslationString _fileNotFound = new TranslationString("File not found");
-        private readonly TranslationString _fileTooLarge = new TranslationString("File too large");
+        private const int MaxFileSize = 1024 * 1024;
 
         private readonly Parser _parser;
         private readonly ICssUrlResolver _urlResolver;
@@ -42,150 +36,125 @@ namespace GitUI.Theming
 
         public IReadOnlyDictionary<KnownColor, Color> SysColors => _sysColors;
 
-        public bool TryLoadCss(string filePath)
+        public void LoadCss(string path)
         {
             if (_parseCalled)
             {
-                throw new InvalidOperationException($"{nameof(ThemeCssLoader)} only supports 1 call to {nameof(TryLoadCss)}");
+                throw new InvalidOperationException($"{nameof(ThemeCssLoader)} only supports 1 call to {nameof(LoadCss)}");
             }
 
             _parseCalled = true;
 
-            return TryLoadCssImpl(filePath, cssImportChain: Array.Empty<string>());
+            LoadCssImpl(path, cssImportChain: new[] { path });
         }
 
-        private bool TryLoadCssImpl(string filePath, string[] cssImportChain)
+        private void LoadCssImpl(string path, string[] cssImportChain)
         {
-            if (!TryReadFile(filePath, out string inputContent))
+            string content = ReadFile(path);
+            var stylesheet = _parser.Parse(content);
+            if (stylesheet.Errors.Count > 0)
             {
-                return false;
+                throw new ThemeRepositoryException(
+                    $"Error parsing css:{Environment.NewLine}{string.Join(Environment.NewLine, stylesheet.Errors)}", path);
             }
 
-            var stylesheet = _parser.Parse(inputContent);
             foreach (var importDirective in stylesheet.ImportDirectives)
             {
-                if (!TryImport(filePath, importDirective, cssImportChain))
-                {
-                    return false;
-                }
+                Import(importDirective, cssImportChain, path);
             }
 
             foreach (StyleRule rule in stylesheet.StyleRules)
             {
-                if (!TryParseRule(filePath, rule))
-                {
-                    return false;
-                }
+                ParseRule(rule, path);
             }
-
-            return true;
         }
 
-        private bool TryReadFile(string fileName, out string result)
+        private string ReadFile(string path)
         {
-            result = null;
-            var fileInfo = new FileInfo(fileName);
-
-            if (!fileInfo.Exists)
+            var fileInfo = new FileInfo(path);
+            if (fileInfo.Exists && fileInfo.Length > MaxFileSize)
             {
-                PrintTraceWarning(fileName, _fileNotFound.Text);
-                return false;
-            }
-
-            if (fileInfo.Length > 1024 * 1024)
-            {
-                PrintTraceWarning(fileName, _fileTooLarge.Text);
-                return false;
+                throw new ThemeRepositoryException($"File too large, maximum is {MaxFileSize} bytes", path);
             }
 
             try
             {
-                result = File.ReadAllText(fileName);
-                return true;
+                return File.ReadAllText(path);
             }
-            catch (Exception ex)
+            catch (SystemException ex)
             {
-                PrintTraceWarning(fileName, ex.Message);
-                return false;
+                throw new ThemeRepositoryException(ex.Message, path, ex);
             }
         }
 
-        private bool TryImport(string filePath, ImportRule importDirective, string[] cssImportChain)
+        private void Import(ImportRule importRule, string[] cssImportChain, string path)
         {
-            var importFilePath = _urlResolver.ResolveCssUrl(importDirective.Href);
-            if (importFilePath == null)
+            string importFilePath;
+            try
             {
-                PrintTraceWarning(filePath, $"Failed to resolve import: {importDirective.Href}");
-                return false;
+                importFilePath = _urlResolver.ResolveCssUrl(importRule.Href);
+            }
+            catch (CssUrlResolverException ex)
+            {
+                throw new ThemeRepositoryException($"Failed to resolve css import {importRule.Href}: {ex.Message}", path, ex);
             }
 
             if (cssImportChain.Any(_ => StringComparer.OrdinalIgnoreCase.Equals((string)_, importFilePath)))
             {
-                PrintTraceWarning(filePath, $"Cycling css imports: {string.Join(",", cssImportChain.Append(importFilePath))}");
-                return false;
+                string importChainText = string.Join("->", cssImportChain.Append(importFilePath));
+                throw new ThemeRepositoryException($"Cycling css import {importRule.Href} {importChainText}", path);
             }
 
-            return TryLoadCssImpl(importFilePath, cssImportChain.Append(importFilePath));
+            LoadCssImpl(importFilePath, cssImportChain.Append(importFilePath));
         }
 
-        private bool TryParseRule(string filePath, StyleRule rule)
+        private void ParseRule(StyleRule rule, string path)
         {
-            var color = TryGetColor(rule);
-            if (!color.HasValue)
-            {
-                PrintTraceWarning(filePath, string.Format(_invalidRule.Text, rule.Value));
-                return false;
-            }
+            var color = GetColor(rule, path);
 
-            var classNames = TryGetClassNames(rule);
-            if (classNames == null)
-            {
-                PrintTraceWarning(filePath, string.Format(_invalidRule.Text, rule.Value));
-                return false;
-            }
+            var classNames = GetClassNames(rule, path);
 
             var colorName = classNames[0];
             if (!classNames.Skip(1).All(_allowedClasses.Contains))
             {
-                return true;
+                return;
             }
 
             _specificityByColor.TryGetValue(colorName, out int previousSpecificity);
             int specificity = classNames.Length;
             if (specificity < previousSpecificity)
             {
-                return true;
+                return;
             }
 
             _specificityByColor[colorName] = specificity;
             if (Enum.TryParse(colorName, out AppColor appColorName))
             {
-                _appColors[appColorName] = color.Value;
-                return true;
+                _appColors[appColorName] = color;
+                return;
             }
 
             if (Enum.TryParse(colorName, out KnownColor sysColorName))
             {
-                _sysColors[sysColorName] = color.Value;
-                return true;
+                _sysColors[sysColorName] = color;
+                return;
             }
 
-            PrintTraceWarning(filePath, string.Format(_invalidRule.Text, rule.Value));
-            return false;
+            throw new ThemeRepositoryException(rule, path);
         }
 
-        private string[] TryGetClassNames(StyleRule rule)
+        private string[] GetClassNames(StyleRule rule, string path)
         {
             var selector = rule.Selector;
             if (!(selector is SimpleSelector simpleSelector))
             {
-                return null;
+                throw new ThemeRepositoryException(rule, path);
             }
 
             var selectorText = simpleSelector.ToString();
             if (!selectorText.StartsWith(ClassSelector))
             {
-                return null;
+                throw new ThemeRepositoryException(rule, path);
             }
 
             return selectorText
@@ -193,24 +162,20 @@ namespace GitUI.Theming
                 .Split(new[] { ClassSelector }, StringSplitOptions.RemoveEmptyEntries);
         }
 
-        private Color? TryGetColor(StyleRule rule)
+        private Color GetColor(StyleRule rule, string path)
         {
             if (rule.Declarations == null || rule.Declarations.Count != 1)
             {
-                return null;
+                throw new ThemeRepositoryException(rule, path);
             }
 
             var style = rule.Declarations[0];
             if (style.Name != ColorProperty || !(style.Term is HtmlColor htmlColor))
             {
-                return null;
+                throw new ThemeRepositoryException(rule, path);
             }
 
             return Color.FromArgb(htmlColor.A, htmlColor.R, htmlColor.G, htmlColor.B);
         }
-
-        [Conditional("DEBUG")]
-        private void PrintTraceWarning(string fileName, string message) =>
-            Trace.WriteLine(string.Format(_failedToLoadThemeFrom.Text, fileName) + Environment.NewLine + message);
     }
 }

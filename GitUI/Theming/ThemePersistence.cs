@@ -14,13 +14,9 @@ namespace GitUI.Theming
 
         public Theme Load(string fileName, ThemeId id, string[] variations)
         {
-            var themeParser = new ThemeCssLoader(CssUrlResolver, allowedClasses: variations);
-            if (themeParser.TryLoadCss(fileName))
-            {
-                return new Theme(themeParser.AppColors, themeParser.SysColors, id);
-            }
-
-            return null;
+            var themeLoader = new ThemeCssLoader(CssUrlResolver, allowedClasses: variations);
+            themeLoader.LoadCss(fileName);
+            return new Theme(themeLoader.AppColors, themeLoader.SysColors, id);
         }
 
         public void Save(Theme theme, string fileName)

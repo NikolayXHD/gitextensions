@@ -12,7 +12,7 @@ namespace GitUI.Theming
     {
         private const string Subdirectory = "Themes";
         private const string Extension = ".css";
-        private const string CssVariableUserThemesDirectory = "$user-defined/";
+        private const string CssVariableUserThemesDirectory = "{UserAppData}/";
 
         private readonly ThemePersistence _persistence;
 
@@ -100,14 +100,22 @@ namespace GitUI.Theming
                 ? new ThemeId(url.Substring(CssVariableUserThemesDirectory.Length), isBuiltin: false)
                 : new ThemeId(url, isBuiltin: true);
 
+            string path;
             try
             {
-                return GetPath(id);
+                path = GetPath(id);
             }
-            catch (ThemeNotFoundException)
+            catch (InvalidOperationException ex)
             {
-                return null;
+                throw new CssUrlResolverException(ex.Message);
             }
+
+            if (!File.Exists(path))
+            {
+                throw new CssUrlResolverException($"File not found: {path}");
+            }
+
+            return path;
         }
 
         private string GetPath(ThemeId id)
@@ -121,26 +129,13 @@ namespace GitUI.Theming
             {
                 if (UserThemesDirectory == null)
                 {
-                    throw new ThemeNotFoundException("There is no directory for custom user themes in portable mode");
+                    throw new InvalidOperationException("There is no directory for custom user themes in portable mode");
                 }
 
                 path = Path.Combine(UserThemesDirectory, id.Name + Extension);
             }
 
-            if (!File.Exists(path))
-            {
-                throw new ThemeNotFoundException($"Theme file not found: {path}");
-            }
-
             return path;
-        }
-
-        private class ThemeNotFoundException : Exception
-        {
-            public ThemeNotFoundException(string message)
-                : base(message)
-            {
-            }
         }
     }
 }

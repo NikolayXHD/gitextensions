@@ -19,5 +19,5 @@ To create a theme based on existing one and change a few colors use .css import 
 
 - To import from a user-defined theme:
 ```css
-@import url("$user-defined/dark.css");
+@import url("{UserAppData}/dark.css");
 ```

@@ -129,11 +129,15 @@ namespace GitUI.CommandsDialogs.SettingsDialog.Pages
 
         private void ChkUseSystemVisualStyle_CheckedChanged(object sender, EventArgs e)
         {
-            BeginUpdateThemeSettings();
-            EndUpdateThemeSettings();
+            UpdateThemeSettings();
         }
 
         private void ChkColorblind_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateThemeSettings();
+        }
+
+        private void UpdateThemeSettings()
         {
             BeginUpdateThemeSettings();
             EndUpdateThemeSettings();
